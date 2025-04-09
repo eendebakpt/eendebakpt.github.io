@@ -15,11 +15,11 @@ The first freelist we consider are the python `float` objects. In the histogram 
 
 ## dicts
 
-For the `dict` object there is something strange: the occupation is highest for size 79 and 80. The maximum freelist size for dicts during the gathering of statistics was 80 (see [pycore_freelist_state.h](https://github.com/eendebakpt/cpython/blob/48eb543da314229e719543b5542742490165ef4c/Include/internal/pycore_freelist_state.h#L18)). This suggests much more objects are returned to the freelist that consumed from the freelist. This is possible because objects deallocatin only happens in `dict_dealloc` where `_Py_FREELIST_FREE` is called. But construction of new `dict` objects happens in multiple places (`new_dict`, `copy_lock_held`, maybe more) but only in `new_dict` a call to `
+For the `dict` object there is something strange: the occupation is highest for size 79 and 80. The maximum freelist size for dicts during the gathering of statistics was 80 (see [pycore_freelist_state.h](https://github.com/eendebakpt/cpython/blob/48eb543da314229e719543b5542742490165ef4c/Include/internal/pycore_freelist_state.h#L18)). This suggests much more objects are returned to the freelist than consumed from the freelist. This is possible because objects deallocation only happens in `dict_dealloc` where `_Py_FREELIST_FREE` is called. But construction of new `dict` objects happens in multiple places (`new_dict`, `copy_lock_held`, maybe more) but only in `new_dict` a call to `_Py_FREELIST_POP` is made.
+By adding a call to `_Py_FREELIST_POP` in `copy_lock_held` we might be able to get more of the dict freelist.
 
 ![image info](images/freelist_allocations_dicts.png)
 
-The full statistics are available at [freelist_stats.md](freelist_stats.md).
 
 ## tuples
 
@@ -27,8 +27,9 @@ For tuples there are multiple freelists based on the tuple size. The tuples with
 
 ![image info](images/freelist_allocations_tuples[2].png)
 
-For larger sizes the statistics suggest we could do with a much smaller maximum freelist size (the same holds for other freelists such as `ranges` and `rangeiters`.
+For larger sizes the statistics suggest we could do with a much smaller maximum freelist size to achieve similar performance (the same holds for other freelists such as `ranges` and `rangeiters`.
 
 ![image info](images/freelist_allocations_tuples[12].png)
+![image info](images/freelist_allocations_ranges.png)
 
 
