@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CPython core team over time</title>
+<link rel="stylesheet" href="style.css">
+
+<!-- Inline data bundle (works from file://) -->
+<script src="data.js"></script>
+
+<!-- Pyodide: brings CPython 3.x + numpy + matplotlib to the browser as WASM.
+     First load is ~30 MB, cached on revisit. -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.27.5/full/pyodide.js"></script>
+</head>
+<body>
+<main>
+  <header>
+    <h1>CPython core team over time</h1>
+    <p class="lead">
+      Runs <code>core_devs_activity.py</code> directly in the browser via
+      Pyodide (CPython + matplotlib as WASM). Listed roster vs. recently-active
+      contributors over CPython's history.
+    </p>
+  </header>
+
+  <section class="controls">
+    <label>Activity window (days):
+      <input type="number" id="windowDays" value="365" min="30" max="3650" step="30">
+    </label>
+    <label>Start year:
+      <input type="number" id="startYear" value="" min="1989" max="2026" step="1">
+    </label>
+    <span class="status" id="status">Loading Pyodide…</span>
+  </section>
+
+  <section class="chart-wrap">
+    <!-- matplotlib output goes here as a base64-encoded PNG so we don't have
+         to mess with figure-canvas placement. -->
+    <img id="chart-img" alt="Time series chart">
+  </section>
+
+  <section class="kpis">
+    <div class="kpi"><span class="num" id="kpiListed">—</span><span class="lbl">listed today</span></div>
+    <div class="kpi"><span class="num" id="kpiActive">—</span><span class="lbl">active in window</span></div>
+    <div class="kpi"><span class="num" id="kpiPct">—</span><span class="lbl">% active</span></div>
+    <div class="kpi"><span class="num" id="kpiTime">—</span><span class="lbl">Python render ms</span></div>
+  </section>
+
+  <details>
+    <summary>Sources &amp; caveats</summary>
+    <ul>
+      <li><strong>Roster</strong> from the
+        <a href="https://devguide.python.org/core-team/team-log/index.html">devguide team-log</a>
+        — 207 historical members back to 1989-12-25 (Guido).</li>
+      <li><strong>Activity</strong> from the GitHub Search API: PR or issue
+        authored in <code>python/cpython</code>.</li>
+      <li><strong>Comments are not counted</strong>: GitHub has no per-user-per-repo
+        comment search; a member who only reviewed PRs appears inactive.</li>
+      <li><strong>Pre-GitHub era</strong> (before the cpython repo migrated to
+        GitHub in Feb 2017): the active series is conservatively low.</li>
+      <li><strong>~50 listed members never had a GitHub account</strong> and
+        resigned en-masse on 2017-02-10 — they count as listed during their
+        tenure but never as active.</li>
+    </ul>
+  </details>
+
+  <details>
+    <summary>How this page runs Python in your browser</summary>
+    <ol>
+      <li><strong>Pyodide</strong> downloads a WASM build of CPython + stdlib
+        from jsDelivr (~10 MB compressed).</li>
+      <li><strong>matplotlib</strong> is loaded via <code>pyodide.loadPackage</code>
+        (~15 MB more).</li>
+      <li>The data bundle <code>data.js</code> is loaded as a normal script
+        tag and exposed as <code>window.__DATA__</code>; the page hands those
+        objects to Python via <code>pyodide.globals.set</code>.</li>
+      <li>The Python program (embedded in an inert
+        <code>&lt;script type="text/python"&gt;</code> block) does the
+        month-walk, day-precision membership check, and active-count via
+        binary search — identical to the desktop script.</li>
+      <li>matplotlib renders to an in-memory PNG buffer; the bytes are
+        base64-encoded and stuffed into an <code>&lt;img&gt;</code> tag,
+        which sidesteps Pyodide's canvas-backend placement story.</li>
+    </ol>
+    <p>Cold start is 5–20 s on most connections; everything cached on revisit.
+      Per-render after that is 50–200 ms.</p>
+  </details>
+
+  <details>
+    <summary>The Python code (executed each Render click)</summary>
+<pre id="app-py-display"></pre>
+  </details>
+</main>
+
+<!-- The Python program. type="text/python" prevents the browser from running
+     it as JavaScript; we read it via textContent and hand it to Pyodide. -->
+<script type="text/python" id="app-py">
+import json
+import datetime as dt
+import bisect
+import io
+import base64
+import time
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import js  # Pyodide-provided proxy for window globals
+
+t0 = time.perf_counter()
+
+roster = json.loads(ROSTER_JSON)
+activity_data = json.loads(ACTIVITY_JSON)
+members = roster["members"]
+sorted_activity = {lg: sorted(arr) for lg, arr in activity_data["logins"].items()}
+
+
+def member_on_team_at(m, when_iso: str) -> bool:
+    if m["joined"] > when_iso:
+        return False
+    if m["left"] and m["left"] <= when_iso:
+        return False
+    return True
+
+
+def month_iter(start_year: int):
+    today = dt.date.today()
+    cur = dt.date(start_year, 1, 1)
+    end = dt.date(today.year, today.month, 1)
+    while cur <= end:
+        yield cur
+        y, mo = cur.year + (cur.month // 12), cur.month % 12 + 1
+        cur = dt.date(y, mo, 1)
+
+
+dates = list(month_iter(START_YEAR))
+listed_series, active_series = [], []
+for d in dates:
+    win_start = (d - dt.timedelta(days=WINDOW_DAYS)).isoformat()
+    d_iso = d.isoformat()
+    n_l = n_a = 0
+    for m in members:
+        if not member_on_team_at(m, d_iso):
+            continue
+        n_l += 1
+        login = m.get("login")
+        if not login:
+            continue
+        arr = sorted_activity.get(login)
+        if not arr:
+            continue
+        i = bisect.bisect_left(arr, win_start)
+        if i < len(arr) and arr[i] <= d_iso:
+            n_a += 1
+    listed_series.append(n_l)
+    active_series.append(n_a)
+
+# Plot
+fig, ax = plt.subplots(num="core_devs", figsize=(11, 5.5), clear=True)
+ax.plot(dates, listed_series, label="Listed core team", linewidth=2, color="#2e6fdb")
+ax.plot(dates, active_series,
+        label=f"Active (>=1 PR/issue in past {WINDOW_DAYS}d)",
+        linewidth=2, color="#e07b00")
+ax.fill_between(dates, active_series, listed_series, alpha=0.15, color="#2e6fdb",
+                label="Listed but not active in window")
+ax.set_xlabel("Date")
+ax.set_ylabel("Core team members (count)")
+ax.set_title("CPython core team over time (Pyodide + matplotlib)")
+ax.grid(alpha=0.3)
+ax.legend(loc="upper left")
+year_span = dates[-1].year - dates[0].year
+ax.xaxis.set_major_locator(mdates.YearLocator(base=max(1, year_span // 8)))
+ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+fig.autofmt_xdate()
+fig.tight_layout()
+
+# Render to base64 PNG and stuff into the <img> tag
+buf = io.BytesIO()
+fig.savefig(buf, format="png", dpi=120)
+buf.seek(0)
+js.document.getElementById("chart-img").src = (
+    "data:image/png;base64," + base64.b64encode(buf.read()).decode()
+)
+
+# KPIs
+last_l, last_a = listed_series[-1], active_series[-1]
+js.document.getElementById("kpiListed").textContent = str(last_l)
+js.document.getElementById("kpiActive").textContent = str(last_a)
+js.document.getElementById("kpiPct").textContent = (
+    f"{round(100 * last_a / last_l)}%" if last_l else "—"
+)
+js.document.getElementById("kpiTime").textContent = (
+    f"{int((time.perf_counter() - t0) * 1000)}"
+)
+</script>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+// Default start year = year of the earliest "joined" date in the dataset.
+function earliestJoinedYear() {
+  let earliest = null;
+  for (const m of window.__DATA__.roster.members) {
+    if (!m.joined) continue;
+    if (earliest === null || m.joined < earliest) earliest = m.joined;
+  }
+  return earliest ? parseInt(earliest.slice(0, 4), 10) : 1989;
+}
+
+async function main() {
+  // Show the Python source in the <details> block, so the page is self-documenting.
+  $("app-py-display").textContent = $("app-py").textContent.trim();
+
+  // Default the start-year input from the data.
+  $("startYear").value = earliestJoinedYear();
+
+  $("status").textContent = "Loading Pyodide WASM…";
+  const t0 = performance.now();
+  const pyodide = await loadPyodide();
+
+  $("status").textContent = "Loading matplotlib (~15 MB)…";
+  await pyodide.loadPackage(["matplotlib"]);
+
+  const setupMs = Math.round(performance.now() - t0);
+  $("status").textContent = `Pyodide ready (${setupMs} ms cold-load).`;
+
+  const code = $("app-py").textContent;
+
+  // Single render-in-flight + at-most-one-queued. Multiple input changes
+  // collapse into one extra render after the current one finishes.
+  let isRendering = false;
+  let pendingRender = false;
+
+  async function renderOnce() {
+    const t = performance.now();
+    $("status").textContent = "Computing in Python…";
+    pyodide.globals.set("ROSTER_JSON", JSON.stringify(window.__DATA__.roster));
+    pyodide.globals.set("ACTIVITY_JSON", JSON.stringify(window.__DATA__.activity));
+    pyodide.globals.set("WINDOW_DAYS", parseInt($("windowDays").value, 10));
+    pyodide.globals.set("START_YEAR", parseInt($("startYear").value, 10));
+    try {
+      await pyodide.runPythonAsync(code);
+      $("status").textContent =
+        `Rendered in ${Math.round(performance.now() - t)} ms wall.`;
+    } catch (e) {
+      $("status").textContent = `Python error: ${e.message}`;
+      throw e;
+    }
+  }
+
+  async function scheduleRender() {
+    if (isRendering) { pendingRender = true; return; }
+    isRendering = true;
+    try {
+      do {
+        pendingRender = false;
+        await renderOnce();
+      } while (pendingRender);
+    } finally {
+      isRendering = false;
+    }
+  }
+
+  // Re-render on any value change. `input` fires per-keystroke / per-arrow,
+  // which is what you want for a slider feel; the guard above coalesces
+  // bursts into at most one queued follow-up render.
+  $("windowDays").addEventListener("input", scheduleRender);
+  $("startYear").addEventListener("input", scheduleRender);
+
+  // First render on initial load.
+  scheduleRender();
+}
+main().catch((e) => {
+  $("status").textContent = `Failed: ${e.message}`;
+  console.error(e);
+});
+</script>
+</body>
+</html>
