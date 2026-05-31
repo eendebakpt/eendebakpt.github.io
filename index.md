@@ -4,7 +4,7 @@ Pieter Eendebak — scientist focused on quantum computing, computer vision, and
 
 **Core dev activity**
 
-- [Core dev activity page](core_devs_activity/core_devs_activity.py)
+- [Core dev activity (webpage)](core_devs_activity/pyodide_web/)
 
 **Posts**
 
