@@ -109,10 +109,24 @@ import js  # Pyodide-provided proxy for window globals
 
 t0 = time.perf_counter()
 
-roster = json.loads(ROSTER_JSON)
-activity_data = json.loads(ACTIVITY_JSON)
-members = roster["members"]
-sorted_activity = {lg: sorted(arr) for lg, arr in activity_data["logins"].items()}
+# Parse the (constant) data bundle once. Pyodide globals persist between
+# runPythonAsync calls, so later renders reuse these cached structures instead
+# of re-parsing ~2 MB of JSON and re-sorting 150k dates every time.
+try:
+    _PARSED
+except NameError:
+    members = json.loads(ROSTER_JSON)["members"]
+    logins = json.loads(ACTIVITY_JSON)["logins"]
+    sorted_activity = {lg: sorted(arr) for lg, arr in logins.items()}
+    # Per-author active-days -> a single (day, login) event list sorted by day,
+    # so the active-contributors sweep below is O(events).
+    try:
+        contrib_logins = json.loads(CONTRIB_JSON).get("logins", {})
+    except Exception:
+        contrib_logins = {}
+    contrib_events = sorted((day, lg)
+                            for lg, days in contrib_logins.items() for day in days)
+    _PARSED = True
 
 
 def member_on_team_at(m, when_iso: str) -> bool:
@@ -126,7 +140,9 @@ def member_on_team_at(m, when_iso: str) -> bool:
 def month_iter(start_year: int):
     today = dt.date.today()
     cur = dt.date(start_year, 1, 1)
-    end = dt.date(today.year, today.month, 1)
+    # Only complete months: the current month is still in progress, so end at
+    # the last full month (the month before the current one).
+    end = dt.date(today.year, today.month, 1) - dt.timedelta(days=1)
     while cur <= end:
         yield cur
         y, mo = cur.year + (cur.month // 12), cur.month % 12 + 1
@@ -155,6 +171,28 @@ for d in dates:
     listed_series.append(n_l)
     active_series.append(n_a)
 
+# Active contributors (any author) per month: distinct logins with >=1 active
+# day in [win_start, m]. Two pointers sweep the event list once (O(events)).
+active_contrib_series = []
+if contrib_events:
+    counts, active, lo, hi, N = {}, 0, 0, 0, len(contrib_events)
+    for d in dates:
+        m_iso = d.isoformat()
+        win_start = (d - dt.timedelta(days=WINDOW_DAYS)).isoformat()
+        while hi < N and contrib_events[hi][0] <= m_iso:
+            lg = contrib_events[hi][1]
+            counts[lg] = counts.get(lg, 0) + 1
+            if counts[lg] == 1:
+                active += 1
+            hi += 1
+        while lo < hi and contrib_events[lo][0] < win_start:
+            lg = contrib_events[lo][1]
+            counts[lg] -= 1
+            if counts[lg] == 0:
+                active -= 1
+            lo += 1
+        active_contrib_series.append(active)
+
 # Plot
 fig, ax = plt.subplots(num="core_devs", figsize=(11, 5.5), clear=True)
 ax.plot(dates, listed_series, label="Listed core team", linewidth=2, color="#2e6fdb")
@@ -165,21 +203,48 @@ ax.fill_between(dates, active_series, listed_series, alpha=0.15, color="#2e6fdb"
                 label="Listed but not active in window")
 ax.set_xlabel("Date")
 ax.set_ylabel("Core team members (count)")
+ax.set_ylim(bottom=0)
+# Active contributors (whole community) dwarf the core-team counts, so they get
+# their own right-hand axis — otherwise they flatten the team lines. (Active
+# core devs are a subset of this line.)
+handles, labels = [], []
+if active_contrib_series:
+    ax_t = ax.twinx()
+    ax_t.plot(dates, active_contrib_series,
+              label=f"Active contributors (any author, past {WINDOW_DAYS}d)",
+              linewidth=2, linestyle="--", color="#0b6e34", alpha=0.9)
+    ax_t.set_ylabel("Active contributors (any author)", color="#0b6e34")
+    ax_t.tick_params(axis="y", labelcolor="#0b6e34")
+    ax_t.set_ylim(bottom=0)
+    handles, labels = ax_t.get_legend_handles_labels()
 ax.set_title("CPython core team over time (Pyodide + matplotlib)")
 ax.grid(alpha=0.3)
-ax.legend(loc="upper left")
+h, l = ax.get_legend_handles_labels()
+ax.legend(h + handles, l + labels, loc="upper left")
 year_span = dates[-1].year - dates[0].year
 ax.xaxis.set_major_locator(mdates.YearLocator(base=max(1, year_span // 8)))
 ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
 fig.autofmt_xdate()
-fig.tight_layout()
 
-# Render to base64 PNG and stuff into the <img> tag
+# Layout: tight_layout runs a full measure pass (~25 ms) and the figure shape is
+# stable across renders, so do it once, snapshot the margins, then reuse them
+# cheaply via subplots_adjust. This also leaves no layout engine attached, so
+# savefig skips its redundant "tight" pre-draw.
+try:
+    fig.subplots_adjust(**_LAYOUT)
+except NameError:
+    fig.tight_layout()
+    _sp = fig.subplotpars
+    _LAYOUT = dict(left=_sp.left, right=_sp.right, top=_sp.top, bottom=_sp.bottom)
+
+# Encode JPEG (q=92): ~10x faster to encode than PNG with no visible loss on
+# these lines/text, and white facecolor avoids JPEG's no-alpha black fringing.
 buf = io.BytesIO()
-fig.savefig(buf, format="png", dpi=120)
+fig.savefig(buf, format="jpeg", dpi=120, facecolor="white",
+            pil_kwargs={"quality": 92})
 buf.seek(0)
 js.document.getElementById("chart-img").src = (
-    "data:image/png;base64," + base64.b64encode(buf.read()).decode()
+    "data:image/jpeg;base64," + base64.b64encode(buf.read()).decode()
 )
 
 # KPIs
@@ -226,6 +291,13 @@ async function main() {
 
   const code = $("app-py").textContent;
 
+  // The data bundle is constant, so push it to Python once. Only the two
+  // controls change per render. (The Python side caches the parsed result.)
+  pyodide.globals.set("ROSTER_JSON", JSON.stringify(window.__DATA__.roster));
+  pyodide.globals.set("ACTIVITY_JSON", JSON.stringify(window.__DATA__.activity));
+  pyodide.globals.set("CONTRIB_JSON",
+    JSON.stringify(window.__DATA__.contributors || {logins: {}}));
+
   // Single render-in-flight + at-most-one-queued. Multiple input changes
   // collapse into one extra render after the current one finishes.
   let isRendering = false;
@@ -234,8 +306,6 @@ async function main() {
   async function renderOnce() {
     const t = performance.now();
     $("status").textContent = "Computing in Python…";
-    pyodide.globals.set("ROSTER_JSON", JSON.stringify(window.__DATA__.roster));
-    pyodide.globals.set("ACTIVITY_JSON", JSON.stringify(window.__DATA__.activity));
     pyodide.globals.set("WINDOW_DAYS", parseInt($("windowDays").value, 10));
     pyodide.globals.set("START_YEAR", parseInt($("startYear").value, 10));
     try {
@@ -261,13 +331,18 @@ async function main() {
     }
   }
 
-  // Re-render on any value change. `input` fires per-keystroke / per-arrow,
-  // which is what you want for a slider feel; the guard above coalesces
-  // bursts into at most one queued follow-up render.
-  $("windowDays").addEventListener("input", scheduleRender);
-  $("startYear").addEventListener("input", scheduleRender);
+  // Debounce input changes: `input` fires per-keystroke / per-arrow, so wait
+  // until the user pauses before kicking off a (matplotlib-bound) render. The
+  // in-flight guard above still coalesces anything that slips through.
+  const debounce = (fn, ms) => {
+    let h;
+    return () => { clearTimeout(h); h = setTimeout(fn, ms); };
+  };
+  const debouncedRender = debounce(scheduleRender, 400);
+  $("windowDays").addEventListener("input", debouncedRender);
+  $("startYear").addEventListener("input", debouncedRender);
 
-  // First render on initial load.
+  // First render on initial load (immediate, no debounce).
   scheduleRender();
 }
 main().catch((e) => {
