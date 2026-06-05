@@ -49,10 +49,11 @@ code { background: var(--panel); padding: 1px 4px; border-radius: 3px; font-size
 .controls .status { color: var(--muted); font-size: .85rem; margin-left: auto; font-family: ui-monospace, monospace; }
 
 .chart-wrap {
-  background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+  background: #fff; border: 1px solid var(--border); border-radius: 6px;
   padding: 1rem; text-align: center; min-height: 300px;
 }
 .chart-wrap img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.chart-wrap svg { width: 100%; height: auto; display: block; }
 
 .kpis {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

@@ -9,8 +9,8 @@
 <!-- Inline data bundle (works from file://) -->
 <script src="data.js"></script>
 
-<!-- Pyodide: brings CPython 3.x + numpy + matplotlib to the browser as WASM.
-     First load is ~30 MB, cached on revisit. -->
+<!-- Pyodide: brings CPython to the browser as WASM. The default SVG renderer
+     needs only Pyodide core; matplotlib (~15 MB) loads on demand. Cached on revisit. -->
 <script src="https://cdn.jsdelivr.net/pyodide/v0.27.5/full/pyodide.js"></script>
 </head>
 <body>
@@ -19,8 +19,9 @@
     <h1>CPython core team over time</h1>
     <p class="lead">
       Runs <code>core_devs_activity.py</code> directly in the browser via
-      Pyodide (CPython + matplotlib as WASM). Listed roster vs. recently-active
-      contributors over CPython's history.
+      Pyodide (CPython as WASM). The chart is drawn as a hand-built SVG using
+      only the standard library; a matplotlib backend is available on demand.
+      Listed roster vs. recently-active contributors over CPython's history.
     </p>
   </header>
 
@@ -31,13 +32,19 @@
     <label>Start year:
       <input type="number" id="startYear" value="" min="1989" max="2026" step="1">
     </label>
+    <label>Renderer:
+      <select id="renderer">
+        <option value="svg">SVG (lightweight)</option>
+        <option value="matplotlib">matplotlib (~15 MB)</option>
+      </select>
+    </label>
     <span class="status" id="status">Loading Pyodide…</span>
   </section>
 
   <section class="chart-wrap">
-    <!-- matplotlib output goes here as a base64-encoded PNG so we don't have
-         to mess with figure-canvas placement. -->
-    <img id="chart-img" alt="Time series chart">
+    <!-- The renderer writes here: an inline <svg> (default, stdlib-only) or an
+         <img> with a matplotlib-rendered JPEG (backup backend). -->
+    <div id="chart-host"></div>
   </section>
 
   <section class="kpis">
@@ -69,9 +76,7 @@
     <summary>How this page runs Python in your browser</summary>
     <ol>
       <li><strong>Pyodide</strong> downloads a WASM build of CPython + stdlib
-        from jsDelivr (~10 MB compressed).</li>
-      <li><strong>matplotlib</strong> is loaded via <code>pyodide.loadPackage</code>
-        (~15 MB more).</li>
+        from jsDelivr (~10 MB compressed). That's all the default needs.</li>
       <li>The data bundle <code>data.js</code> is loaded as a normal script
         tag and exposed as <code>window.__DATA__</code>; the page hands those
         objects to Python via <code>pyodide.globals.set</code>.</li>
@@ -79,12 +84,15 @@
         <code>&lt;script type="text/python"&gt;</code> block) does the
         month-walk, day-precision membership check, and active-count via
         binary search — identical to the desktop script.</li>
-      <li>matplotlib renders to an in-memory PNG buffer; the bytes are
-        base64-encoded and stuffed into an <code>&lt;img&gt;</code> tag,
-        which sidesteps Pyodide's canvas-backend placement story.</li>
+      <li><strong>SVG renderer (default):</strong> the same Python builds an
+        inline <code>&lt;svg&gt;</code> string with the standard library only —
+        no matplotlib, numpy, or pillow — and drops it into the page.</li>
+      <li><strong>matplotlib backend (optional):</strong> selecting it
+        <code>loadPackage</code>s matplotlib (~15 MB, one-time) and renders to a
+        JPEG <code>&lt;img&gt;</code> — the same chart, heavier download.</li>
     </ol>
-    <p>Cold start is 5–20 s on most connections; everything cached on revisit.
-      Per-render after that is 50–200 ms.</p>
+    <p>Cold start with the SVG renderer is a few seconds (Pyodide core only);
+      switching to matplotlib adds the one-time ~15 MB. Cached on revisit.</p>
   </details>
 
   <details>
@@ -99,13 +107,12 @@
 import json
 import datetime as dt
 import bisect
-import io
-import base64
 import time
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 import js  # Pyodide-provided proxy for window globals
+# Note: matplotlib is NOT imported here. The default renderer builds an SVG
+# string with the stdlib only, so the page needs just Pyodide core. matplotlib
+# (~15 MB) is imported lazily inside render_matplotlib() when that backend is
+# selected — see the JS driver, which loadPackage()s it on demand.
 
 t0 = time.perf_counter()
 
@@ -193,59 +200,167 @@ if contrib_events:
             lo += 1
         active_contrib_series.append(active)
 
-# Plot
-fig, ax = plt.subplots(num="core_devs", figsize=(11, 5.5), clear=True)
-ax.plot(dates, listed_series, label="Listed core team", linewidth=2, color="#2e6fdb")
-ax.plot(dates, active_series,
-        label=f"Active (>=1 PR/issue in past {WINDOW_DAYS}d)",
-        linewidth=2, color="#e07b00")
-ax.fill_between(dates, active_series, listed_series, alpha=0.15, color="#2e6fdb",
-                label="Listed but not active in window")
-ax.set_xlabel("Date")
-ax.set_ylabel("Core team members (count)")
-ax.set_ylim(bottom=0)
-# Active contributors (whole community) dwarf the core-team counts, so they get
-# their own right-hand axis — otherwise they flatten the team lines. (Active
-# core devs are a subset of this line.)
-handles, labels = [], []
-if active_contrib_series:
-    ax_t = ax.twinx()
-    ax_t.plot(dates, active_contrib_series,
-              label=f"Active contributors (any author, past {WINDOW_DAYS}d)",
-              linewidth=2, linestyle="--", color="#0b6e34", alpha=0.9)
-    ax_t.set_ylabel("Active contributors (any author)", color="#0b6e34")
-    ax_t.tick_params(axis="y", labelcolor="#0b6e34")
-    ax_t.set_ylim(bottom=0)
-    handles, labels = ax_t.get_legend_handles_labels()
-ax.set_title("CPython core team over time (Pyodide + matplotlib)")
-ax.grid(alpha=0.3)
-h, l = ax.get_legend_handles_labels()
-ax.legend(h + handles, l + labels, loc="upper left")
-year_span = dates[-1].year - dates[0].year
-ax.xaxis.set_major_locator(mdates.YearLocator(base=max(1, year_span // 8)))
-ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-fig.autofmt_xdate()
+BLUE, ORANGE, GREEN = "#2e6fdb", "#e07b00", "#0b6e34"
 
-# Layout: tight_layout runs a full measure pass (~25 ms) and the figure shape is
-# stable across renders, so do it once, snapshot the margins, then reuse them
-# cheaply via subplots_adjust. This also leaves no layout engine attached, so
-# savefig skips its redundant "tight" pre-draw.
-try:
-    fig.subplots_adjust(**_LAYOUT)
-except NameError:
-    fig.tight_layout()
-    _sp = fig.subplotpars
-    _LAYOUT = dict(left=_sp.left, right=_sp.right, top=_sp.top, bottom=_sp.bottom)
 
-# Encode JPEG (q=92): ~10x faster to encode than PNG with no visible loss on
-# these lines/text, and white facecolor avoids JPEG's no-alpha black fringing.
-buf = io.BytesIO()
-fig.savefig(buf, format="jpeg", dpi=120, facecolor="white",
-            pil_kwargs={"quality": 92})
-buf.seek(0)
-js.document.getElementById("chart-img").src = (
-    "data:image/jpeg;base64," + base64.b64encode(buf.read()).decode()
-)
+def _nice_ticks(vmax, max_ticks=10):
+    """Axis ticks [0 .. top] with a 1/2/2.5/5 * 10**k step, choosing the step
+    that leaves the least headroom above vmax (so the axis isn't padded too
+    wide at the top) while keeping the tick count reasonable."""
+    import math
+    if vmax <= 0:
+        return [0, 1]
+    mag = 10 ** math.floor(math.log10(vmax))
+    best = None
+    for k in (mag / 10, mag, mag * 10):
+        for mult in (1, 2, 2.5, 5):
+            step = mult * k
+            n = math.ceil(vmax / step)        # intervals
+            if 2 <= n <= max_ticks - 1:
+                cand = (n * step - vmax, step, n)   # headroom first -> minimise
+                if best is None or cand < best:
+                    best = cand
+    _, step, n = best
+    return [i * step for i in range(n + 1)]
+
+
+def render_svg(dates, listed, active, contrib, window):
+    """Build the chart as an inline SVG string — stdlib only, no matplotlib.
+    Twin axes: core-team counts on the left, active contributors on the right."""
+    W, H = 1100, 560
+    ml, mr, mt, mb = 78, 100, 48, 70
+    pw, ph = W - ml - mr, H - mt - mb
+    o0, o1 = dates[0].toordinal(), dates[-1].toordinal()
+    span = max(1, o1 - o0)
+    lticks = _nice_ticks(max(listed) if listed else 1)
+    cticks = _nice_ticks(max(contrib) if contrib else 1)
+    lmax, cmax = lticks[-1], cticks[-1]
+    X = lambda d: ml + (d.toordinal() - o0) / span * pw
+    YL = lambda v: mt + ph - v / lmax * ph
+    YR = lambda v: mt + ph - v / cmax * ph
+    line = lambda pts: " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
+    s = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" '
+         f'width="100%" font-family="system-ui,sans-serif" font-size="15">',
+         f'<rect width="{W}" height="{H}" fill="white"/>',
+         f'<text x="{W//2}" y="28" text-anchor="middle" font-size="17" '
+         f'font-weight="600">CPython core team over time (Pyodide + SVG)</text>',
+         f'<rect x="{ml}" y="{mt}" width="{pw}" height="{ph}" fill="none" stroke="#ccc"/>']
+    # x: year gridlines + labels
+    step = max(1, (dates[-1].year - dates[0].year) // 8)
+    yr = dates[0].year + (1 if dt.date(dates[0].year, 1, 1) < dates[0] else 0)
+    while yr <= dates[-1].year:
+        gx = X(dt.date(yr, 1, 1))
+        s.append(f'<line x1="{gx:.1f}" y1="{mt}" x2="{gx:.1f}" y2="{mt+ph}" stroke="#eee"/>')
+        s.append(f'<text x="{gx:.1f}" y="{mt+ph+25}" text-anchor="middle" '
+                 f'font-size="18" fill="#444">{yr}</text>')
+        yr += step
+    # left axis: gridlines + count labels (gridlines follow the left ticks)
+    for v in lticks:
+        gy = YL(v)
+        s.append(f'<line x1="{ml}" y1="{gy:.1f}" x2="{ml+pw}" y2="{gy:.1f}" stroke="#eee"/>')
+        s.append(f'<text x="{ml-10}" y="{gy+6:.1f}" text-anchor="end" '
+                 f'font-size="18" fill="#444">{v:g}</text>')
+    # right axis: contributor labels at their own nice ticks (twinx-style; not
+    # aligned to the left gridlines)
+    for v in cticks:
+        s.append(f'<text x="{ml+pw+10}" y="{YR(v)+6:.1f}" '
+                 f'font-size="18" fill="{GREEN}">{v:g}</text>')
+    # fill band (listed vs active, left scale)
+    band = [(X(d), YL(v)) for d, v in zip(dates, listed)]
+    band += [(X(d), YL(v)) for d, v in zip(reversed(dates), reversed(active))]
+    s.append(f'<polygon points="{line(band)}" fill="{BLUE}" fill-opacity="0.13"/>')
+    s.append(f'<polyline points="{line([(X(d), YL(v)) for d, v in zip(dates, listed)])}" '
+             f'fill="none" stroke="{BLUE}" stroke-width="2.5"/>')
+    s.append(f'<polyline points="{line([(X(d), YL(v)) for d, v in zip(dates, active)])}" '
+             f'fill="none" stroke="{ORANGE}" stroke-width="2.5"/>')
+    if contrib:
+        s.append(f'<polyline points="{line([(X(d), YR(v)) for d, v in zip(dates, contrib)])}" '
+                 f'fill="none" stroke="{GREEN}" stroke-width="2.5"/>')
+    # axis labels (kept clear of the image edge)
+    cy = mt + ph / 2
+    s.append(f'<text x="26" y="{cy:.0f}" text-anchor="middle" font-size="17" fill="#444" '
+             f'transform="rotate(-90 26 {cy:.0f})">Core team members (count)</text>')
+    s.append(f'<text x="{W-26}" y="{cy:.0f}" text-anchor="middle" font-size="17" fill="{GREEN}" '
+             f'transform="rotate(90 {W-26} {cy:.0f})">Active contributors (any author)</text>')
+    s.append(f'<text x="{ml+pw/2:.0f}" y="{H-12}" text-anchor="middle" font-size="17" fill="#444">Date</text>')
+    # legend (line items, plus a filled swatch for the shaded band)
+    lx, ly = ml + 14, mt + 18
+    items = [("line", BLUE, "Listed core team", ""),
+             ("line", ORANGE, f"Active (&gt;=1 PR/issue in past {window}d)", ""),
+             ("band", BLUE, "Listed but not active in window", ""),
+             ("line", GREEN, f"Active contributors (any author, past {window}d)", "")]
+    s.append(f'<rect x="{lx-10}" y="{ly-16}" width="372" height="{len(items)*22+10}" '
+             f'fill="white" fill-opacity="0.85" stroke="#ddd"/>')
+    for i, (kind, col, lab, dash) in enumerate(items):
+        yy = ly + i * 22
+        if kind == "band":
+            s.append(f'<rect x="{lx}" y="{yy-7}" width="26" height="14" fill="{col}" '
+                     f'fill-opacity="0.13" stroke="{col}" stroke-opacity="0.4"/>')
+        else:
+            s.append(f'<line x1="{lx}" y1="{yy}" x2="{lx+26}" y2="{yy}" stroke="{col}" '
+                     f'stroke-width="2.5"{dash}/>')
+        s.append(f'<text x="{lx+34}" y="{yy+5}" fill="#222">{lab}</text>')
+    s.append("</svg>")
+    return "".join(s)
+
+
+def render_matplotlib(dates, listed, active, contrib, window):
+    """Backup renderer: identical chart via matplotlib -> JPEG in an <img>.
+    Only reachable once the matplotlib package has been loadPackage()'d."""
+    global _LAYOUT
+    import io
+    import base64
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import matplotlib.dates as mdates
+
+    fig, ax = plt.subplots(num="core_devs", figsize=(11, 5.5), clear=True)
+    ax.plot(dates, listed, label="Listed core team", linewidth=2, color=BLUE)
+    ax.plot(dates, active, label=f"Active (>=1 PR/issue in past {window}d)",
+            linewidth=2, color=ORANGE)
+    ax.fill_between(dates, active, listed, alpha=0.15, color=BLUE,
+                    label="Listed but not active in window")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Core team members (count)")
+    ax.set_ylim(bottom=0)
+    handles, labels = [], []
+    if contrib:
+        ax_t = ax.twinx()
+        ax_t.plot(dates, contrib, linewidth=2.5, color=GREEN, alpha=0.9,
+                  label=f"Active contributors (any author, past {window}d)")
+        ax_t.set_ylabel("Active contributors (any author)", color=GREEN)
+        ax_t.tick_params(axis="y", labelcolor=GREEN)
+        ax_t.set_ylim(bottom=0)
+        handles, labels = ax_t.get_legend_handles_labels()
+    ax.set_title("CPython core team over time (Pyodide + matplotlib)")
+    ax.grid(alpha=0.3)
+    h, l = ax.get_legend_handles_labels()
+    ax.legend(h + handles, l + labels, loc="upper left")
+    ax.xaxis.set_major_locator(mdates.YearLocator(base=max(1, (dates[-1].year - dates[0].year) // 8)))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+    fig.autofmt_xdate()
+    # Snapshot tight_layout margins once, then reuse cheaply (see desktop notes).
+    try:
+        fig.subplots_adjust(**_LAYOUT)
+    except NameError:
+        fig.tight_layout()
+        sp = fig.subplotpars
+        _LAYOUT = dict(left=sp.left, right=sp.right, top=sp.top, bottom=sp.bottom)
+    buf = io.BytesIO()
+    fig.savefig(buf, format="jpeg", dpi=120, facecolor="white",
+                pil_kwargs={"quality": 92})
+    data = base64.b64encode(buf.getvalue()).decode()
+    return f'<img alt="chart" style="width:100%" src="data:image/jpeg;base64,{data}">'
+
+
+if RENDERER == "matplotlib":
+    html = render_matplotlib(dates, listed_series, active_series,
+                             active_contrib_series, WINDOW_DAYS)
+else:
+    html = render_svg(dates, listed_series, active_series,
+                      active_contrib_series, WINDOW_DAYS)
+js.document.getElementById("chart-host").innerHTML = html
 
 # KPIs
 last_l, last_a = listed_series[-1], active_series[-1]
@@ -283,8 +398,15 @@ async function main() {
   const t0 = performance.now();
   const pyodide = await loadPyodide();
 
-  $("status").textContent = "Loading matplotlib (~15 MB)…";
-  await pyodide.loadPackage(["matplotlib"]);
+  // The default SVG renderer needs only Pyodide core. matplotlib (~15 MB) is
+  // fetched on demand the first time the matplotlib backend is selected.
+  let mplReady = false;
+  async function ensureMatplotlib() {
+    if (mplReady) return;
+    $("status").textContent = "Loading matplotlib (~15 MB, one-time)…";
+    await pyodide.loadPackage(["matplotlib"]);
+    mplReady = true;
+  }
 
   const setupMs = Math.round(performance.now() - t0);
   $("status").textContent = `Pyodide ready (${setupMs} ms cold-load).`;
@@ -304,14 +426,17 @@ async function main() {
   let pendingRender = false;
 
   async function renderOnce() {
+    const renderer = $("renderer").value;
+    if (renderer === "matplotlib") await ensureMatplotlib();
     const t = performance.now();
     $("status").textContent = "Computing in Python…";
     pyodide.globals.set("WINDOW_DAYS", parseInt($("windowDays").value, 10));
     pyodide.globals.set("START_YEAR", parseInt($("startYear").value, 10));
+    pyodide.globals.set("RENDERER", renderer);
     try {
       await pyodide.runPythonAsync(code);
       $("status").textContent =
-        `Rendered in ${Math.round(performance.now() - t)} ms wall.`;
+        `Rendered (${renderer}) in ${Math.round(performance.now() - t)} ms wall.`;
     } catch (e) {
       $("status").textContent = `Python error: ${e.message}`;
       throw e;
@@ -341,6 +466,9 @@ async function main() {
   const debouncedRender = debounce(scheduleRender, 400);
   $("windowDays").addEventListener("input", debouncedRender);
   $("startYear").addEventListener("input", debouncedRender);
+  // Renderer switch is a deliberate click — render immediately (may trigger the
+  // one-time matplotlib download).
+  $("renderer").addEventListener("change", scheduleRender);
 
   // First render on initial load (immediate, no debounce).
   scheduleRender();
