@@ -10,5 +10,5 @@ Pieter Eendebak — scientist focused on quantum computing, computer vision, and
 
 **Posts**
 
-- *July 2026* — [A small conjecture, an AI proof, and what Lean did for it](posts/ai_divisibility_theorem/index.md) — proving the ESVG even-odd conjecture with Claude, verified in Lean 4
+- *July 2026* — [A small conjecture, an AI proof, and what Lean did for it](posts/ai_divisibility_theorem/index.md) — proving the ESVG even-odd conjecture with Claude
 - *April 2025* — [CPython freelists](posts/cpython_freelists.md) — allocation statistics and analysis

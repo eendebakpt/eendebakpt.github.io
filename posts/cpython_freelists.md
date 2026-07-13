@@ -1,6 +1,10 @@
+<sub>[← home](../)</sub>
+
 # CPython freelists
 
-The [cpython]([GitHub - python/cpython: The Python programming language](https://github.com/python/cpython/)) implementation contains freelists to improve allocation performance of often used objects such as dicts, lists and tuples.
+*April 2025*
+
+The [cpython](https://github.com/python/cpython/) implementation contains freelists to improve allocation performance of often used objects such as dicts, lists and tuples.
 
 Here we present results on the allocation statistics for freelists. For each freelist we record how many objects allocations are performed for the freelist size. If allocations are performed while the freelist size is zero, this means there are no objects available on the freelist and a normal allocation is used instead.
 

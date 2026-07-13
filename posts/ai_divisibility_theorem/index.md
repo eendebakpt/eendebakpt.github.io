@@ -1,3 +1,5 @@
+<sub>[← home](../../)</sub>
+
 # A small conjecture, an AI proof, and what Lean did for it
 
 *Pieter Eendebak — July 2026*
@@ -22,9 +24,7 @@ $J$'s vanishing, with the first non-zero odd one at order 9 or higher. What our
 enumeration showed was striking: **type-5 designs are everywhere, and type-7
 and type-9 designs were essentially absent**.
 
-The numbers below come from Tables 2, 4, and 6 of the 2023 paper, except the
-five-factor entries at $N=40$ and $N=48$, which are not reported there and were
-computed directly for this post. All counts are of
+The numbers below come from Tables 2, 4, and 6 of the 2023 paper. All counts are of
 *even-odd* designs: strength-3 $\pm 1$ arrays with $J_4\not\equiv 0$ and at
 least one nonzero odd-order $J$. A "—" means not possible, and "**?**" marks cells which are unknown.
 
@@ -50,8 +50,7 @@ The type-7 counts are all zero, and this is established in the 2023 paper
 itself: using the complete strength-3 catalogs of Schoen et al. (2010) and an
 extension argument, the only 56- or 64-run strength-3 design with $J_5\equiv 0$
 and a nonzero $J_7$-characteristic is the regular $2^{7-1}$ design of
-resolution VII at $N=64$ — and that design is not even–odd, because all its
-$J_4$-characteristics vanish.
+resolution VII at $N=64$ — and that design is not even–odd.
 
 **Number of even-odd designs with $J_5\equiv J_7\equiv 0$ but some odd $J\not\equiv 0$ (type 9 or higher):**
 
@@ -98,7 +97,7 @@ tedious task.
 So I asked Claude to translate the argument into [Lean 4](https://lean-lang.org/). Lean is a proof
 assistant: you write the proof in a formal language and the computer checks
 every inference step against a library of accepted mathematics. If anything
-is missing, hand-waved, or just wrong, the build fails.
+is missing or incorrect, the build fails.
 
 This turned out to be a productive step. The
 formalisation surfaced two kinds of issue. Some were small gaps — places
@@ -110,7 +109,7 @@ short projection argument turned out to do the same work without any
 numerical search. The divisibility statement also got cleaner.
 
 The Lean build of the new proof finishes in about a thousand checked steps. This means that instead of reviewing the full proof, we now only have to verify the conjecture statement was translated properly to Lean.
-The complete formalization — from the Walsh–Hadamard identities down to the $N \ge 256$ run-size bound, with no `sorry` and no axioms beyond Lean's standard ones — is available as a single self-contained file, [EvenOddDivisibility.lean](EvenOddDivisibility.lean).
+The complete formalization — from the Walsh–Hadamard identities down to the $N \ge 256$ run-size bound — is available as a single self-contained file, [EvenOddDivisibility.lean](EvenOddDivisibility.lean).
 
 ## Human verification
 
@@ -140,7 +139,7 @@ Prompting Claude to formalize the conjecture and proof in Lean was a good step. 
 
 The AI-written paper was definitely not at the standards of a peer-reviewed journal.
 I think here the Claude model can be improved, in particular when trained on published articles
-or teaching material. One example: journals discourage numbered equations in the abstract (inline formulas are discouraged too). This is a well-known convention, but Claude used them in the abstract anyway. For reference, the original unrevised AI-written paper is available [here](ai_only_paper.pdf).
+or teaching material. One example: journals discourage numbered equations in the abstract (inline formulas are discouraged too). This is a well-known convention, but Claude used them in the abstract anyway. For reference, the original unrevised AI-written paper is available [here](divisibility_ai_only_paper.pdf).
 
 
 (disclaimer: this text was written with assistance from Claude)
