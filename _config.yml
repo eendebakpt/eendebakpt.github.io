@@ -1,0 +1,5 @@
+theme: jekyll-theme-cayman
+title: eendebakpt.github.io
+
+kramdown:
+  math_engine: mathjax
