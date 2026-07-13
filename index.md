@@ -1,10 +1,12 @@
 # eendebakpt.github.io
 
-Pieter Eendebak — scientist focused on quantum computing, computer vision, and experimental design. Open-source contributor to Python scientific projects. Personal site: http://pietereendebak.nl
+Pieter Eendebak — scientist focused on quantum computing, computer vision, and experimental design. Open-source contributor to Python scientific projects.
 
-**Core dev activity**
+**Topics**
 
+- [Orthogonal Array package](http://www.pietereendebak.nl/oapackage/index.html)
 - [Core dev activity (webpage)](core_devs_activity/pyodide_web/)
+- Personal site: [http://pietereendebak.nl](http://pietereendebak.nl)
 
 **Posts**
 
