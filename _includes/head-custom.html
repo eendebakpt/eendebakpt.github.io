@@ -13,6 +13,33 @@
   .page-header { padding: 2rem 4.8rem; }
   .project-name { font-size: 2.6rem; }
   .project-tagline { font-size: 1rem; margin-bottom: 0; }
+  /* Wider text column on desktop monitors (Cayman default is 64rem) */
+  @media screen and (min-width: 64em) {
+    .main-content { max-width: 80rem; }
+  }
+  /* Make collapsible <details> sections look clickable */
+  .main-content details {
+    margin-bottom: 1rem;
+    border: 1px solid #dce6f0;
+    border-radius: 0.3rem;
+  }
+  .main-content details > summary {
+    display: list-item; /* restore the disclosure triangle hidden by normalize.css */
+    list-style-position: inside;
+    padding: 0.6rem 1rem;
+    font-weight: bold;
+    color: #1e6bb8;
+    background-color: #f3f6fa;
+    border-radius: 0.3rem;
+    cursor: pointer;
+  }
+  .main-content details > summary:hover { text-decoration: underline; }
+  .main-content details[open] { padding: 0 1rem 0.5rem; }
+  .main-content details[open] > summary {
+    margin: 0 -1rem 1rem;
+    border-bottom: 1px solid #dce6f0;
+    border-radius: 0.3rem 0.3rem 0 0;
+  }
   @media screen and (max-width: 64em) {
     .page-header { padding: 1.5rem 3.2rem; }
     .project-name { font-size: 2rem; }
