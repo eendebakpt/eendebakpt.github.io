@@ -68,11 +68,7 @@ at the C level.
 
 ## Results
 
-*Lower is better. Absolute numbers are machine-specific — the trend across
-versions is the interesting part. How the numbers were measured is described
-in the [benchmark setup](#benchmark-setup).*
-
-The operands in the chart legends are:
+For benchmark details see [benchmark setup](#benchmark-setup). The operands in the chart legends are:
 
 | Name | Operand |
 |---|---|
