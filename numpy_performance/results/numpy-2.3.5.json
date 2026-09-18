@@ -1,0 +1,230 @@
+{
+  "label": "2.3.5",
+  "numpy": "2.3.5",
+  "python": "3.13.13",
+  "machine": "AMD64",
+  "processor": "AMD64 Family 25 Model 68 Stepping 1, AuthenticAMD",
+  "results": [
+    {
+      "group": "scalar",
+      "name": "np.add(1.5, 2.5)",
+      "ns": 828.4
+    },
+    {
+      "group": "scalar",
+      "name": "np.multiply(f64, f64)",
+      "ns": 824.1
+    },
+    {
+      "group": "scalar",
+      "name": "np.sqrt(f64)",
+      "ns": 641.6
+    },
+    {
+      "group": "scalar",
+      "name": "np.sin(f64)",
+      "ns": 642.1
+    },
+    {
+      "group": "scalar",
+      "name": "f64 + f64",
+      "ns": 40.9
+    },
+    {
+      "group": "scalar",
+      "name": "f64 ** 2",
+      "ns": 73.9
+    },
+    {
+      "group": "scalar",
+      "name": "np.float64(1.5)",
+      "ns": 72.5
+    },
+    {
+      "group": "scalar",
+      "name": "copy.copy(f64)",
+      "ns": 738.8
+    },
+    {
+      "group": "scalar",
+      "name": "i64 + i64",
+      "ns": 34.3
+    },
+    {
+      "group": "scalar",
+      "name": "np.abs(i64)",
+      "ns": 676.4
+    },
+    {
+      "group": "scalar",
+      "name": "np.multiply(i64, i64)",
+      "ns": 912.2
+    },
+    {
+      "group": "ufunc-small",
+      "name": "a + b",
+      "ns": 399.5
+    },
+    {
+      "group": "ufunc-small",
+      "name": "a * 2.0",
+      "ns": 655.2
+    },
+    {
+      "group": "ufunc-small",
+      "name": "np.add(a, b)",
+      "ns": 440.1
+    },
+    {
+      "group": "ufunc-small",
+      "name": "np.add(a, b, out=out)",
+      "ns": 399.0
+    },
+    {
+      "group": "ufunc-small",
+      "name": "np.sqrt(a)",
+      "ns": 391.1
+    },
+    {
+      "group": "ufunc-small",
+      "name": "np.exp(a)",
+      "ns": 429.5
+    },
+    {
+      "group": "ufunc-small",
+      "name": "a > b",
+      "ns": 427.2
+    },
+    {
+      "group": "ufunc-small",
+      "name": "np.maximum(a, b)",
+      "ns": 458.9
+    },
+    {
+      "group": "ufunc-small",
+      "name": "ai + bi (int64)",
+      "ns": 417.7
+    },
+    {
+      "group": "reduction-10",
+      "name": "np.sum",
+      "ns": 2091.9
+    },
+    {
+      "group": "reduction-10",
+      "name": "np.mean",
+      "ns": 3168.3
+    },
+    {
+      "group": "reduction-10",
+      "name": "np.any",
+      "ns": 1896.6
+    },
+    {
+      "group": "reduction-10",
+      "name": "np.all",
+      "ns": 1859.5
+    },
+    {
+      "group": "reduction-10",
+      "name": "np.min",
+      "ns": 2152.8
+    },
+    {
+      "group": "reduction-10",
+      "name": "np.max",
+      "ns": 2107.6
+    },
+    {
+      "group": "reduction-10",
+      "name": "np.sum (int64)",
+      "ns": 2056.8
+    },
+    {
+      "group": "reduction-1000",
+      "name": "np.sum",
+      "ns": 2318.4
+    },
+    {
+      "group": "reduction-1000",
+      "name": "np.mean",
+      "ns": 3459.3
+    },
+    {
+      "group": "reduction-1000",
+      "name": "np.any",
+      "ns": 1951.7
+    },
+    {
+      "group": "reduction-1000",
+      "name": "np.all",
+      "ns": 2003.7
+    },
+    {
+      "group": "reduction-1000",
+      "name": "np.min",
+      "ns": 2355.4
+    },
+    {
+      "group": "reduction-1000",
+      "name": "np.max",
+      "ns": 2261.7
+    },
+    {
+      "group": "nonzero",
+      "name": "np.nonzero(a) (n=10)",
+      "ns": 601.8
+    },
+    {
+      "group": "nonzero",
+      "name": "np.nonzero(bool10)",
+      "ns": 578.3
+    },
+    {
+      "group": "nonzero",
+      "name": "np.nonzero(bool1000)",
+      "ns": 1227.7
+    },
+    {
+      "group": "nonzero",
+      "name": "np.count_nonzero(a) (n=10)",
+      "ns": 250.8
+    },
+    {
+      "group": "nonzero",
+      "name": "np.count_nonzero(bool1000)",
+      "ns": 342.2
+    },
+    {
+      "group": "overhead",
+      "name": "np.array(1.5)",
+      "ns": 218.0
+    },
+    {
+      "group": "overhead",
+      "name": "np.asarray(a)",
+      "ns": 54.9
+    },
+    {
+      "group": "overhead",
+      "name": "np.zeros(10)",
+      "ns": 204.0
+    },
+    {
+      "group": "overhead",
+      "name": "np.concatenate((a, b))",
+      "ns": 776.4
+    },
+    {
+      "group": "overhead",
+      "name": "np.result_type(a, 2.5)",
+      "ns": 361.1
+    },
+    {
+      "group": "other",
+      "name": "np.linalg.det(3x3)",
+      "ns": 1768.2,
+      "measured_on": "Linux x86_64"
+    }
+  ]
+}

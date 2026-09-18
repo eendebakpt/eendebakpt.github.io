@@ -1,0 +1,209 @@
+{
+  "label": "2.6-halfway",
+  "numpy": "2.6.0.dev0+git20260706.faf6fac",
+  "python": "3.13.3",
+  "machine": "x86_64",
+  "processor": "x86_64",
+  "results": [
+    {
+      "group": "scalar",
+      "name": "np.add(1.5, 2.5)",
+      "ns": 620.5
+    },
+    {
+      "group": "scalar",
+      "name": "np.multiply(f64, f64)",
+      "ns": 620.9
+    },
+    {
+      "group": "scalar",
+      "name": "np.sqrt(f64)",
+      "ns": 98.9
+    },
+    {
+      "group": "scalar",
+      "name": "np.sin(f64)",
+      "ns": 98.7
+    },
+    {
+      "group": "scalar",
+      "name": "f64 + f64",
+      "ns": 30.0
+    },
+    {
+      "group": "scalar",
+      "name": "f64 ** 2",
+      "ns": 42.0
+    },
+    {
+      "group": "scalar",
+      "name": "np.float64(1.5)",
+      "ns": 50.4
+    },
+    {
+      "group": "scalar",
+      "name": "copy.copy(f64)",
+      "ns": 125.0
+    },
+    {
+      "group": "scalar",
+      "name": "i64 + i64",
+      "ns": 25.0
+    },
+    {
+      "group": "scalar",
+      "name": "np.abs(i64)",
+      "ns": 96.5
+    },
+    {
+      "group": "scalar",
+      "name": "np.multiply(i64, i64)",
+      "ns": 654.7
+    },
+    {
+      "group": "ufunc-small",
+      "name": "a + b",
+      "ns": 310.6
+    },
+    {
+      "group": "ufunc-small",
+      "name": "a * 2.0",
+      "ns": 497.5
+    },
+    {
+      "group": "ufunc-small",
+      "name": "np.add(a, b)",
+      "ns": 322.1
+    },
+    {
+      "group": "ufunc-small",
+      "name": "np.add(a, b, out=out)",
+      "ns": 309.5
+    },
+    {
+      "group": "ufunc-small",
+      "name": "np.sqrt(a)",
+      "ns": 288.5
+    },
+    {
+      "group": "ufunc-small",
+      "name": "np.exp(a)",
+      "ns": 333.2
+    },
+    {
+      "group": "ufunc-small",
+      "name": "a > b",
+      "ns": 315.4
+    },
+    {
+      "group": "ufunc-small",
+      "name": "np.maximum(a, b)",
+      "ns": 324.0
+    },
+    {
+      "group": "ufunc-small",
+      "name": "ai + bi (int64)",
+      "ns": 300.1
+    },
+    {
+      "group": "reduction-10",
+      "name": "np.sum",
+      "ns": 708.0
+    },
+    {
+      "group": "reduction-10",
+      "name": "np.mean",
+      "ns": 1706.3
+    },
+    {
+      "group": "reduction-10",
+      "name": "np.any",
+      "ns": 640.3
+    },
+    {
+      "group": "reduction-10",
+      "name": "np.max",
+      "ns": 662.9
+    },
+    {
+      "group": "reduction-10",
+      "name": "np.sum (int64)",
+      "ns": 706.0
+    },
+    {
+      "group": "reduction-1000",
+      "name": "np.sum",
+      "ns": 950.3
+    },
+    {
+      "group": "reduction-1000",
+      "name": "np.mean",
+      "ns": 2028.6
+    },
+    {
+      "group": "reduction-1000",
+      "name": "np.any",
+      "ns": 689.6
+    },
+    {
+      "group": "reduction-1000",
+      "name": "np.max",
+      "ns": 836.4
+    },
+    {
+      "group": "nonzero",
+      "name": "np.nonzero(a) (n=10)",
+      "ns": 424.7
+    },
+    {
+      "group": "nonzero",
+      "name": "np.nonzero(bool10)",
+      "ns": 412.6
+    },
+    {
+      "group": "nonzero",
+      "name": "np.nonzero(bool1000)",
+      "ns": 1183.6
+    },
+    {
+      "group": "nonzero",
+      "name": "np.count_nonzero(a) (n=10)",
+      "ns": 147.5
+    },
+    {
+      "group": "nonzero",
+      "name": "np.count_nonzero(bool1000)",
+      "ns": 244.9
+    },
+    {
+      "group": "overhead",
+      "name": "np.array(1.5)",
+      "ns": 140.5
+    },
+    {
+      "group": "overhead",
+      "name": "np.asarray(a)",
+      "ns": 27.5
+    },
+    {
+      "group": "overhead",
+      "name": "np.zeros(10)",
+      "ns": 135.2
+    },
+    {
+      "group": "overhead",
+      "name": "np.concatenate((a, b))",
+      "ns": 463.8
+    },
+    {
+      "group": "overhead",
+      "name": "np.result_type(a, 2.5)",
+      "ns": 245.0
+    },
+    {
+      "group": "other",
+      "name": "np.linalg.det(3x3)",
+      "ns": 1827.3
+    }
+  ]
+}

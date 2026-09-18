@@ -1,0 +1,152 @@
+{
+  "label": "main-now",
+  "numpy": "2.6.0.dev0+git20260918.e765e67",
+  "python": "3.13.3",
+  "machine": "x86_64",
+  "processor": "x86_64",
+  "operation": "np.sin(float64_array)",
+  "input": "linspace(0, 2pi, size)",
+  "malloc_tuned": true,
+  "results": [
+    {
+      "size": 1,
+      "total_ns": 240.5,
+      "per_element_ns": 240.49
+    },
+    {
+      "size": 2,
+      "total_ns": 251.0,
+      "per_element_ns": 125.49
+    },
+    {
+      "size": 4,
+      "total_ns": 265.2,
+      "per_element_ns": 66.3
+    },
+    {
+      "size": 8,
+      "total_ns": 288.3,
+      "per_element_ns": 36.04
+    },
+    {
+      "size": 16,
+      "total_ns": 334.1,
+      "per_element_ns": 20.88
+    },
+    {
+      "size": 32,
+      "total_ns": 418.8,
+      "per_element_ns": 13.09
+    },
+    {
+      "size": 64,
+      "total_ns": 602.5,
+      "per_element_ns": 9.41
+    },
+    {
+      "size": 128,
+      "total_ns": 1026.5,
+      "per_element_ns": 8.02
+    },
+    {
+      "size": 256,
+      "total_ns": 1785.4,
+      "per_element_ns": 6.97
+    },
+    {
+      "size": 512,
+      "total_ns": 3220.0,
+      "per_element_ns": 6.29
+    },
+    {
+      "size": 1024,
+      "total_ns": 5970.1,
+      "per_element_ns": 5.83
+    },
+    {
+      "size": 2048,
+      "total_ns": 11590.9,
+      "per_element_ns": 5.66
+    },
+    {
+      "size": 4096,
+      "total_ns": 22661.9,
+      "per_element_ns": 5.53
+    },
+    {
+      "size": 8192,
+      "total_ns": 44976.2,
+      "per_element_ns": 5.49
+    },
+    {
+      "size": 16384,
+      "total_ns": 95055.9,
+      "per_element_ns": 5.8
+    },
+    {
+      "size": 32768,
+      "total_ns": 178326.5,
+      "per_element_ns": 5.44
+    },
+    {
+      "size": 65536,
+      "total_ns": 356554.2,
+      "per_element_ns": 5.44
+    },
+    {
+      "size": 131072,
+      "total_ns": 713580.9,
+      "per_element_ns": 5.44
+    },
+    {
+      "size": 262144,
+      "total_ns": 1428915.8,
+      "per_element_ns": 5.45
+    },
+    {
+      "size": 524288,
+      "total_ns": 2864207.2,
+      "per_element_ns": 5.46
+    },
+    {
+      "size": 1048576,
+      "total_ns": 5735585.6,
+      "per_element_ns": 5.47
+    },
+    {
+      "size": 2097152,
+      "total_ns": 11426663.2,
+      "per_element_ns": 5.45
+    },
+    {
+      "size": 4194304,
+      "total_ns": 22978362.5,
+      "per_element_ns": 5.48
+    },
+    {
+      "size": 8388608,
+      "total_ns": 46241254.0,
+      "per_element_ns": 5.51
+    },
+    {
+      "size": 16777216,
+      "total_ns": 92491281.0,
+      "per_element_ns": 5.51
+    },
+    {
+      "size": 33554432,
+      "total_ns": 184089404.0,
+      "per_element_ns": 5.49
+    },
+    {
+      "size": 67108864,
+      "total_ns": 367157835.0,
+      "per_element_ns": 5.47
+    },
+    {
+      "size": 134217728,
+      "total_ns": 1021836885.0,
+      "per_element_ns": 7.61
+    }
+  ]
+}
