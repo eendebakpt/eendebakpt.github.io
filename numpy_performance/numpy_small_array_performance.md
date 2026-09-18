@@ -229,8 +229,7 @@ Julia's StaticArrays.jl is the same idea outside Python.
 
 tinyarray has no trigonometric functions, hence the empty cell. NumPy can
 never shed all of its protocol obligations, but these packages suggest that
-~40–100 ns per small-array operation is physically achievable — roughly
-another 3–7× below where numpy main is today.
+~40–100 ns per small-array operation is achievable.
 
 ## Benchmark setup
 
@@ -244,15 +243,7 @@ supports released versions, direct `git` commit refs and local development
 builds. Details and reproduction commands are in the
 [appendix](#appendix-reproducing-the-benchmarks).
 
-## Notes
 
-Micro-benchmarks of this kind are noisy: CPU frequency scaling, cache state
-and background load easily cause ±10% variation (this data is the per-case
-minimum over two full runs). Look at trends, not single numbers. As a
-cautionary example: the slight upward drift visible in `i64 + i64` does not
-reproduce under controlled re-measurement — the int64 scalar hot path is
-unchanged in the source since 2.1, and the visible step at 2.3 coincides with
-the Windows wheels switching build toolchain (VS2019 → VS2022).
 
 ## Acknowledgements
 
@@ -318,6 +309,10 @@ those fixes benefit the regular GIL build too.
 
 <details markdown="1">
 <summary>Show the benchmark details and commands</summary>
+
+Micro-benchmarks of this kind are noisy: CPU frequency scaling, cache state
+and background load easily cause ±10% variation (this data is the per-case
+minimum over two full runs). Look at trends, not single numbers.
 
 Code: `bench_cases.py` (the ~40 timeit cases), `run_benchmarks.py` (version
 matrix and custom package specs), `plot_results.py` (figures),
