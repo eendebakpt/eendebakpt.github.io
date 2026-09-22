@@ -37,7 +37,8 @@ PLOTS = [
      lambda name: name not in SCALAR_MATH),
     ("scalar_math", "Scalar math with operators", "scalar",
      lambda name: name in SCALAR_MATH),
-    ("ufunc_small", "Ufuncs on a small array (n=10)", "ufunc-small", None),
+    ("ufunc_small", "Ufuncs on a small array (n=10)", "ufunc-small", None,
+     "ufunc_small_lightarray"),
     ("reduction_10", "Reductions on a small array (n=10)", "reduction-10",
      lambda name: name not in {"np.min", "np.all"}),
     ("reduction_1000", "Reductions on a contiguous array (n=1000)",
@@ -116,8 +117,34 @@ def style_axes(ax):
     ax.set_axisbelow(True)
 
 
-def plot_group(runs, group, title, outfile, name_filter=None):
-    """Line chart of one benchmark group (or a tuple of groups) across versions."""
+def lightarray_reference(key):
+    """Average time of the lightarray measurements stored under `key`.
+
+    Returns (mean_ns, label) or None when the package results are missing.
+    """
+    path = HERE / "results" / "small-array-packages.json"
+    if not path.exists():
+        return None
+    with open(path) as fh:
+        data = json.load(fh)
+    cases = data.get(key)
+    if not cases:
+        return None
+    # lightarray delegates the out= variant to NumPy (~4 µs); it says nothing
+    # about the package's own overhead, so it is left out of the average
+    cases = [c for c in cases if "out=" not in c["name"]]
+    mean_ns = sum(c["ns"] for c in cases) / len(cases)
+    version = data.get("versions", {}).get("lightarray", "")
+    label = f"lightarray {version}\n(average, same ops)"
+    return mean_ns, label
+
+
+def plot_group(runs, group, title, outfile, name_filter=None, reference=None):
+    """Line chart of one benchmark group (or a tuple of groups) across versions.
+
+    `reference` names a list in results/small-array-packages.json whose
+    average is drawn as a dashed horizontal line.
+    """
     groups = (group,) if isinstance(group, str) else tuple(group)
     labels = [display_label(r, with_python=False) for r in runs]
     names = [c["name"] for c in runs[-1]["results"] if c["group"] in groups]
@@ -145,6 +172,12 @@ def plot_group(runs, group, title, outfile, name_filter=None):
             values.append(entry.get(name))
         ax.plot(range(len(labels)), values, color=PALETTE[idx % len(PALETTE)],
                 linewidth=2, marker="o", markersize=6, label=name)
+
+    ref = lightarray_reference(reference) if reference else None
+    if ref is not None:
+        mean_ns, label = ref
+        ax.axhline(mean_ns, color=INK2, linestyle="--", linewidth=1.5,
+                   label=label, zorder=1)
 
     ax.set_ylim(bottom=0)
     ax.set_title(title, color=INK, fontsize=12, loc="left", pad=12)
@@ -207,9 +240,9 @@ def main():
     if not runs:
         raise SystemExit("no results found - run run_benchmarks.py first")
     (HERE / "images").mkdir(exist_ok=True)
-    for fname, title, group, name_filter in PLOTS:
+    for fname, title, group, name_filter, *extra in PLOTS:
         plot_group(runs, group, title, HERE / "images" / f"{fname}.png",
-                   name_filter)
+                   name_filter, reference=extra[0] if extra else None)
     plot_speedup(runs, HERE / "images" / "speedup_summary.png")
 
 

@@ -112,6 +112,12 @@ Python scalar is converted and promoted on every call. One dtype note: int64
 `a + b` was ~1.7× slower than float64 on 1.24/1.26 and has been on par since
 2.1.
 
+The dashed line is a reference from outside NumPy: the average time of
+[lightarray](https://github.com/eendebakpt/lightarray) on the same
+operations, with lightarray arrays as input (see
+[below](#how-fast-could-it-be) for what that package is): ~70 ns. The `out=`
+variant is left out of the average, because lightarray delegates it to NumPy.
+
 ### Reductions: mean, sum, any, all, min, max
 
 <!-- Source: bench_cases.py, plot_results.py (reduction-10 group) -->
@@ -218,10 +224,10 @@ Julia's StaticArrays.jl is the same idea outside Python.
 
 | 10-element op | numpy main | tinyarray | lightarray |
 |---|---|---|---|
-| elementwise `a + b` | 269 ns | 40 ns | 70 ns |
-| `np.sin(a)` | 307 ns | — | 104 ns |
-| reduction (`np.sum` / `ta.dot` / `la.sum`) | 397 ns | 53 ns | 59 ns |
-| creation (`zeros(10)`) | 136 ns | 54 ns | 95 ns |
+| elementwise `a + b` | 257 ns | 40 ns | 71 ns |
+| `np.sin(a)` | 292 ns | — | 114 ns |
+| reduction (`np.sum` / `ta.dot` / `la.sum`) | 378 ns | 46 ns | 57 ns |
+| creation (`zeros(10)`) | 124 ns | 50 ns | 96 ns |
 
 tinyarray has no trigonometric functions, hence the empty cell. NumPy can
 never shed all of its protocol obligations, but these packages suggest that

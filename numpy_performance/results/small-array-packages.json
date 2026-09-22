@@ -4,32 +4,70 @@
     "tinyarray": "1.2.5",
     "lightarray": "0.2.0"
   },
-  "python": "3.13.3",
+  "python": "3.13.9",
   "system": "Linux",
   "machine": "x86_64",
   "results": [
     {
       "case": "elementwise `a + b`",
-      "numpy": 269.4,
-      "tinyarray": 40.3,
-      "lightarray": 69.6
+      "numpy": 256.6,
+      "tinyarray": 40.4,
+      "lightarray": 70.6
     },
     {
       "case": "`np.sin(a)`",
-      "numpy": 306.9,
-      "lightarray": 103.9
+      "numpy": 292.4,
+      "lightarray": 114.3
     },
     {
       "case": "reduction (`np.sum` / `ta.dot` / `la.sum`)",
-      "numpy": 397.2,
-      "tinyarray": 53.3,
-      "lightarray": 59.0
+      "numpy": 378.2,
+      "tinyarray": 46.5,
+      "lightarray": 56.8
     },
     {
       "case": "creation (`zeros(10)`)",
-      "numpy": 135.6,
-      "tinyarray": 54.4,
-      "lightarray": 95.1
+      "numpy": 123.8,
+      "tinyarray": 50.1,
+      "lightarray": 96.0
+    }
+  ],
+  "ufunc_small_lightarray": [
+    {
+      "name": "a + b",
+      "ns": 69.7
+    },
+    {
+      "name": "a * 2.0",
+      "ns": 62.3
+    },
+    {
+      "name": "np.add(a, b)",
+      "ns": 79.0
+    },
+    {
+      "name": "np.add(a, b, out=out)",
+      "ns": 2096.5
+    },
+    {
+      "name": "np.sqrt(a)",
+      "ns": 55.7
+    },
+    {
+      "name": "np.exp(a)",
+      "ns": 86.6
+    },
+    {
+      "name": "a > b",
+      "ns": 67.5
+    },
+    {
+      "name": "np.maximum(a, b)",
+      "ns": 79.0
+    },
+    {
+      "name": "ai + bi (int64)",
+      "ns": 60.7
     }
   ]
 }

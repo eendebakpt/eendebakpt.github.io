@@ -10,6 +10,10 @@ results as JSON plus a markdown table on stdout:
 
 A package that does not provide an operation gets no entry (tinyarray has no
 trigonometric functions).
+
+The second part times the "ufunc-small" cases of bench_cases.py with
+lightarray arrays as input; plot_results.py draws their average as a reference
+line in the small-array ufunc chart.
 """
 
 import argparse
@@ -27,6 +31,8 @@ values = [float(i) for i in range(10)]
 a = np.array(values); b = np.ones(10)
 ta_a = ta.array(values); ta_b = ta.ones(10)
 la_a = la.array(values); la_b = la.ones(10)
+la_out = la.empty(10)
+la_i10 = la.array(list(range(10))); la_bi = la.ones(10, dtype=np.int64)
 """
 
 # (row label, {package: statement})
@@ -41,6 +47,19 @@ CASES = [
      {"numpy": "np.zeros(10)", "tinyarray": "ta.zeros(10)", "lightarray": "la.zeros(10)"}),
 ]
 PACKAGES = ["numpy", "tinyarray", "lightarray"]
+
+# the ufunc-small cases of bench_cases.py, with lightarray arrays as operands
+UFUNC_SMALL_LIGHTARRAY = [
+    ("a + b", "la_a + la_b"),
+    ("a * 2.0", "la_a * 2.0"),
+    ("np.add(a, b)", "la.add(la_a, la_b)"),
+    ("np.add(a, b, out=out)", "la.add(la_a, la_b, out=la_out)"),
+    ("np.sqrt(a)", "la.sqrt(la_a)"),
+    ("np.exp(a)", "la.exp(la_a)"),
+    ("a > b", "la_a > la_b"),
+    ("np.maximum(a, b)", "la.maximum(la_a, la_b)"),
+    ("ai + bi (int64)", "la_i10 + la_bi"),
+]
 
 REPEAT = 9
 TARGET_TIME = 0.02  # seconds per repeat
@@ -79,9 +98,16 @@ def main() -> None:
         print(f"| {row['case']} | " + " | ".join(cells) + " |")
     print(versions, file=sys.stderr)
 
+    ufunc_small = []
+    for name, stmt in UFUNC_SMALL_LIGHTARRAY:
+        ns = run_case(stmt)
+        ufunc_small.append({"name": name, "ns": round(ns, 1)})
+        print(f"  lightarray {name:<24} {ns:7.1f} ns", file=sys.stderr)
+
     data = {"versions": versions, "python": platform.python_version(),
             "system": platform.system(), "machine": platform.machine(),
-            "results": results}
+            "results": results,
+            "ufunc_small_lightarray": ufunc_small}
     if args.output:
         with open(args.output, "w") as fh:
             fh.write(json.dumps(data, indent=2) + "\n")
