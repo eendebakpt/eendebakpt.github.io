@@ -138,6 +138,11 @@ cuts `sum`/`any`/`all`/`min`/`max` by another ~2.3× to ~650 ns
 — its Python-level wrapper adds ~1.8 µs on top of the underlying reduction.
 int64 matches float64 throughout.
 
+As in the ufunc chart, the dashed line in the n=10 chart is the average time
+of lightarray on the same five reductions with lightarray arrays as input:
+~80 ns. Four of them take 40–70 ns; the int64 `sum` is the exception at
+~190 ns, a path lightarray has not optimized yet.
+
 ### Other operations
 
 <!-- Source: bench_cases.py, plot_results.py (nonzero and other groups) -->
@@ -224,10 +229,10 @@ Julia's StaticArrays.jl is the same idea outside Python.
 
 | 10-element op | numpy main | tinyarray | lightarray |
 |---|---|---|---|
-| elementwise `a + b` | 257 ns | 40 ns | 71 ns |
-| `np.sin(a)` | 292 ns | — | 114 ns |
-| reduction (`np.sum` / `ta.dot` / `la.sum`) | 378 ns | 46 ns | 57 ns |
-| creation (`zeros(10)`) | 124 ns | 50 ns | 96 ns |
+| elementwise `a + b` | 258 ns | 40 ns | 71 ns |
+| `np.sin(a)` | 294 ns | — | 102 ns |
+| reduction (`np.sum` / `ta.dot` / `la.sum`) | 390 ns | 47 ns | 57 ns |
+| creation (`zeros(10)`) | 125 ns | 51 ns | 96 ns |
 
 tinyarray has no trigonometric functions, hence the empty cell. NumPy can
 never shed all of its protocol obligations, but these packages suggest that

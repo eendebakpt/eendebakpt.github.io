@@ -40,7 +40,7 @@ PLOTS = [
     ("ufunc_small", "Ufuncs on a small array (n=10)", "ufunc-small", None,
      "ufunc_small_lightarray"),
     ("reduction_10", "Reductions on a small array (n=10)", "reduction-10",
-     lambda name: name not in {"np.min", "np.all"}),
+     lambda name: name not in {"np.min", "np.all"}, "reduction_10_lightarray"),
     ("reduction_1000", "Reductions on a contiguous array (n=1000)",
      "reduction-1000", lambda name: name not in {"np.min", "np.all"}),
     ("other_operations", "Other operations", ("nonzero", "other"), None),
